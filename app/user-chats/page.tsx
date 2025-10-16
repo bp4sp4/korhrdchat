@@ -16,7 +16,9 @@ const UserChatsPage = () => {
 
   const handleCreateChat = async () => {
     try {
-      await createChat();
+      // 사용자 이름을 입력받거나 기본값 사용
+      const userName = prompt('이름을 입력해주세요:') || '익명 사용자';
+      await createChat(userName);
     } catch (error) {
       console.error('Failed to create chat:', error);
     }
