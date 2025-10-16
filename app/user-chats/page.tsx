@@ -31,10 +31,10 @@ const UserChatsPage = () => {
     lastMessage: chat.messages && chat.messages.length > 0 
       ? chat.messages[chat.messages.length - 1].content 
       : '새로운 대화가 시작되었습니다.',
-    timestamp: new Date(chat.updated_at).toLocaleTimeString('ko-KR', { 
+    timestamp: chat.updated_at ? new Date(chat.updated_at).toLocaleTimeString('ko-KR', { 
       hour: '2-digit', 
       minute: '2-digit' 
-    }),
+    }) : '시간 정보 없음',
     unreadCount: chat.messages ? 
       chat.messages.filter(msg => !msg.is_read && msg.sender_type === 'agent').length : 0
   }));
