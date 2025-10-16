@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAgent } from '@/hooks/useAgent';
+import { useMessages } from '@/hooks/useMessages';
+import { Message } from '@/lib/supabase';
 
 interface CustomerChat {
   id: string;
@@ -21,43 +24,53 @@ const AgentPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'waiting' | 'active' | 'resolved'>('all');
-  
-  // Mock data for agent dashboard
-  const [customerChats] = useState<CustomerChat[]>([
-    {
-      id: '68f0a79c3e603eee4e8d',
-      customerName: '김고객',
-      lastMessage: '스마트폰 케이스 관련 문의가 있습니다.',
-      timestamp: '10:30',
-      status: 'active',
-      priority: 'medium',
-      unreadCount: 2
-    },
-    {
-      id: 'a1b2c3d4e5f6789012',
-      customerName: '이고객',
-      lastMessage: '배송 문의입니다.',
-      timestamp: '09:15',
-      status: 'waiting',
-      priority: 'high',
-      unreadCount: 1
-    },
-    {
-      id: 'c3d4e5f6g7h8901234',
-      customerName: '박고객',
-      lastMessage: '감사합니다. 문제가 해결되었습니다.',
-      timestamp: '08:45',
-      status: 'resolved',
-      priority: 'low',
-      unreadCount: 0
-    }
-  ]);
+  const [agentMessage, setAgentMessage] = useState('');
+  const { chats, agents, loading, assignChatToAgent, sendAgentMessage, updateChatStatus } = useAgent();
+  const { messages, loading: messagesLoading } = useMessages(selectedChat || 'dummy-id');
 
-  const filteredChats = customerChats.filter(chat => {
+  // Transform chats data for display
+  const transformedChats = chats.map(chat => ({
+    id: chat.id,
+    customerName: chat.name || `채팅방 ${chat.id.slice(-4)}`,
+    lastMessage: chat.messages && chat.messages.length > 0 
+      ? chat.messages[chat.messages.length - 1].content 
+      : '새로운 대화가 시작되었습니다.',
+    timestamp: new Date(chat.updated_at || chat.created_at).toLocaleTimeString('ko-KR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }),
+    status: chat.status as 'waiting' | 'active' | 'resolved',
+    priority: chat.status === 'waiting' ? 'high' : chat.status === 'active' ? 'medium' : 'low',
+    unreadCount: chat.messages ? 
+      chat.messages.filter((msg: Message) => !msg.is_read && msg.sender_type === 'user').length : 0
+  }));
+
+  const filteredChats = transformedChats.filter(chat => {
     const matchesSearch = chat.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || chat.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  const handleAssignChat = async (chatId: string) => {
+    if (agents.length > 0) {
+      try {
+        await assignChatToAgent(chatId, agents[0].id);
+      } catch (error) {
+        console.error('Failed to assign chat:', error);
+      }
+    }
+  };
+
+  const handleSendAgentMessage = async () => {
+    if (selectedChat && agentMessage.trim() && agents.length > 0) {
+      try {
+        await sendAgentMessage(selectedChat, agentMessage, agents[0].id);
+        setAgentMessage('');
+      } catch (error) {
+        console.error('Failed to send message:', error);
+      }
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -107,11 +120,15 @@ const AgentPage = () => {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">3</div>
+                <div className="text-2xl font-bold text-primary">
+                  {transformedChats.filter(chat => chat.status === 'active').length}
+                </div>
                 <div className="text-sm text-muted-foreground">활성 대화</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">2</div>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {transformedChats.filter(chat => chat.status === 'waiting').length}
+                </div>
                 <div className="text-sm text-muted-foreground">대기중</div>
               </div>
             </div>
@@ -151,7 +168,12 @@ const AgentPage = () => {
               {/* Chat List */}
               <ScrollArea className="h-96">
                 <div className="divide-y divide-border">
-                  {filteredChats.map((chat) => (
+                  {loading ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : (
+                    filteredChats.map((chat) => (
                     <div
                       key={chat.id}
                       onClick={() => setSelectedChat(chat.id)}
@@ -195,7 +217,8 @@ const AgentPage = () => {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -203,7 +226,7 @@ const AgentPage = () => {
 
           {/* Chat Interface */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-border h-96 flex flex-col">
+            <div className="bg-white rounded-lg shadow-sm border border-border h-[80vh] flex flex-col">
               {selectedChat ? (
                 <>
                   {/* Chat Header */}
@@ -217,7 +240,7 @@ const AgentPage = () => {
                       </Avatar>
                       <div>
                         <h3 className="font-semibold text-foreground">
-                          {customerChats.find(c => c.id === selectedChat)?.customerName}
+                          {filteredChats.find(c => c.id === selectedChat)?.customerName}
                         </h3>
                         <p className="text-xs text-green-600">온라인</p>
                       </div>
@@ -237,39 +260,99 @@ const AgentPage = () => {
 
                   {/* Chat Messages Area */}
                   <div className="flex-1 p-4 overflow-y-auto">
-                    <div className="space-y-4">
-                      <div className="flex justify-start">
-                        <div className="bg-muted rounded-2xl px-4 py-2 max-w-[70%]">
-                          <p className="text-sm">안녕하세요! 무엇을 도와드릴까요?</p>
-                          <p className="text-xs text-muted-foreground mt-1">10:30</p>
-                        </div>
+                    {messagesLoading ? (
+                      <div className="flex items-center justify-center h-32">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
-                      <div className="flex justify-end">
-                        <div className="bg-primary text-primary-foreground rounded-2xl px-4 py-2 max-w-[70%]">
-                          <p className="text-sm">스마트폰 케이스 관련 문의가 있습니다.</p>
-                          <p className="text-xs text-primary-foreground/70 mt-1">10:31</p>
-                        </div>
+                    ) : messages.length === 0 ? (
+                      <div className="flex items-center justify-center h-32 text-muted-foreground">
+                        <p>메시지가 없습니다</p>
                       </div>
-                      <div className="flex justify-start">
-                        <div className="bg-muted rounded-2xl px-4 py-2 max-w-[70%]">
-                          <p className="text-sm">네, 어떤 상품에 대해 문의하시나요?</p>
-                          <p className="text-xs text-muted-foreground mt-1">10:32</p>
-                        </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {messages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`flex ${message.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className="flex gap-2 max-w-[80%]">
+                              {message.sender_type === 'agent' && (
+                                <Avatar className="w-8 h-8 mt-1">
+                                  <AvatarImage src="" />
+                                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                    상담사
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              <div
+                                className={`rounded-2xl px-4 py-2 ${
+                                  message.sender_type === 'user'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted text-foreground'
+                                }`}
+                              >
+                                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <p
+                                    className={`text-xs ${
+                                      message.sender_type === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                    }`}
+                                  >
+                                    {new Date(message.created_at).toLocaleTimeString('ko-KR', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </p>
+                                  {message.sender_type === 'user' && (
+                                    <span
+                                      className={`text-xs ${
+                                        message.is_read ? 'text-blue-400' : 'text-muted-foreground'
+                                      }`}
+                                    >
+                                      {message.is_read ? '읽음' : '전송됨'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Message Input */}
                   <div className="p-4 border-t border-border">
                     <div className="flex gap-2">
                       <Input
+                        value={agentMessage}
+                        onChange={(e) => setAgentMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendAgentMessage()}
                         placeholder="메시지를 입력하세요..."
                         className="flex-1"
                       />
-                      <Button>
+                      <Button onClick={handleSendAgentMessage} disabled={!agentMessage.trim()}>
                         <MessageCircle className="w-5 h-5" />
                       </Button>
                     </div>
+                    {selectedChat && (
+                      <div className="mt-2 flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleAssignChat(selectedChat)}
+                        >
+                          상담 담당
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => updateChatStatus(selectedChat, 'resolved')}
+                        >
+                          상담 완료
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (

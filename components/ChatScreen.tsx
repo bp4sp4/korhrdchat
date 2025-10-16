@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MessageCircle, Plus, Home, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useChat } from '@/hooks/useChat';
 
 interface ChatScreenProps {
   width?: number;
@@ -13,14 +15,21 @@ interface ChatScreenProps {
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ width = 390, height = 690 }) => {
   const router = useRouter();
+  const { createChat } = useChat();
+  const [showNameInput, setShowNameInput] = useState(false);
+  const [userName, setUserName] = useState('');
 
-  const generateChatId = () => {
-    return Math.random().toString(36).substring(2, 15);
-  };
-
-  const handleCreateChat = () => {
-    const chatId = generateChatId();
-    router.push(`/user-chats/${chatId}`);
+  const handleCreateChat = async () => {
+    if (!userName.trim()) {
+      setShowNameInput(true);
+      return;
+    }
+    
+    try {
+      await createChat(userName.trim());
+    } catch (error) {
+      console.error('Failed to create chat:', error);
+    }
   };
 
   return (
@@ -55,10 +64,49 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ width = 390, height = 690 }) =>
                 <MessageCircle className="w-16 h-16 text-primary" />
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2">라이브 채팅</h2>
+              
+              
               <p className="text-muted-foreground text-center mb-8">
                 언제든지 상담사와 실시간으로 소통하세요.
               </p>
-              <Button onClick={handleCreateChat} className="w-full max-w-xs">
+              
+              {/* 사용자 이름 입력 */}
+              {showNameInput && (
+                <div className="w-full max-w-xs mb-4 space-y-3">
+                  <Input
+                    type="text"
+                    placeholder="이름을 입력하세요"
+                    value={userName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserName(e.target.value)}
+                    className="text-center"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => {
+                        setShowNameInput(false);
+                        setUserName('');
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      취소
+                    </Button>
+                    <Button 
+                      onClick={handleCreateChat}
+                      className="flex-1"
+                      disabled={!userName.trim()}
+                    >
+                      시작하기
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              <Button 
+                onClick={handleCreateChat} 
+                className="w-full max-w-xs"
+              >
                 <Plus className="w-5 h-5 mr-2" />
                 새 채팅 시작하기
               </Button>

@@ -7,47 +7,37 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
-
-interface ChatRoom {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: string;
-  unreadCount: number;
-}
+import { useChat } from '@/hooks/useChat';
 
 const UserChatsPage = () => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Mock chat data - in real app, this would come from your database
-  const [chats] = useState<ChatRoom[]>([
-    {
-      id: '68f0a79c3e603eee4e8d',
-      title: '상담사 김민수',
-      lastMessage: '네, 도움이 되었다니 다행입니다.',
-      timestamp: '10:30',
-      unreadCount: 2
-    },
-    {
-      id: 'a1b2c3d4e5f6789012',
-      title: '상담사 이영희',
-      lastMessage: '추가로 궁금한 점이 있으시면 언제든 말씀해주세요.',
-      timestamp: '09:15',
-      unreadCount: 0
+  const { chats, loading, createChat } = useChat();
+
+  const handleCreateChat = async () => {
+    try {
+      await createChat();
+    } catch (error) {
+      console.error('Failed to create chat:', error);
     }
-  ]);
-
-  const generateChatId = () => {
-    return Math.random().toString(36).substring(2, 15);
   };
 
-  const handleCreateChat = () => {
-    const chatId = generateChatId();
-    router.push(`/user-chats/${chatId}`);
-  };
+  // Transform chats data for display
+  const transformedChats = chats.map(chat => ({
+    id: chat.id,
+    title: chat.agent_id ? '상담사와의 대화' : '대기 중',
+    lastMessage: chat.messages && chat.messages.length > 0 
+      ? chat.messages[chat.messages.length - 1].content 
+      : '새로운 대화가 시작되었습니다.',
+    timestamp: new Date(chat.updated_at).toLocaleTimeString('ko-KR', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }),
+    unreadCount: chat.messages ? 
+      chat.messages.filter(msg => !msg.is_read && msg.sender_type === 'agent').length : 0
+  }));
 
-  const filteredChats = chats.filter(chat =>
+  const filteredChats = transformedChats.filter(chat =>
     chat.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -100,7 +90,12 @@ const UserChatsPage = () => {
 
               {/* Chat List */}
               <div className="flex-1 overflow-y-auto">
-                {filteredChats.length === 0 ? (
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                    <p className="text-lg font-medium">대화 목록을 불러오는 중...</p>
+                  </div>
+                ) : filteredChats.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                     <MessageCircle className="w-12 h-12 mb-4 opacity-50" />
                     <p className="text-lg font-medium mb-2">대화가 없습니다</p>

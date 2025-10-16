@@ -3,26 +3,42 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+console.log('Supabase URL:', supabaseUrl)
+console.log('Supabase Key configured:', !!supabaseAnonKey)
 
-// Database types
-export interface Chat {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false
+  }
+})
+
+// Database types - 기존 테이블 구조에 맞춤
+export interface Room {
   id: string
-  user_id: string
+  name?: string
+  status?: 'waiting' | 'active' | 'resolved'
   agent_id?: string
-  status: 'waiting' | 'active' | 'resolved'
   created_at: string
-  updated_at: string
+  updated_at?: string
+  messages?: Message[]
 }
 
 export interface Message {
   id: string
-  chat_id: string
-  sender_id: string
-  sender_type: 'user' | 'agent'
+  room_id: string
+  sender_name: string
   content: string
+  sender_type?: 'user' | 'agent'
+  is_read?: boolean
   created_at: string
-  is_read: boolean
+}
+
+export interface RoomParticipant {
+  id: string
+  room_id: string
+  user_name: string
+  user_type: string
+  joined_at?: string
 }
 
 export interface Agent {

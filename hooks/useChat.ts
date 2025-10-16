@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase, Chat, Message } from '@/lib/supabase';
+import { supabase, Room, Message } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export const useChat = () => {
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [chats, setChats] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -23,22 +23,35 @@ export const useChat = () => {
   };
 
   // Create a new chat
-  const createChat = async () => {
+  const createChat = async (userName: string) => {
     try {
       const userId = getUserId();
-      const { data, error } = await supabase
-        .from('chats')
+      
+      // 1. room 생성
+      const { data: roomData, error: roomError } = await supabase
+        .from('rooms')
         .insert({
-          user_id: userId,
+          name: `${userName}님의 채팅`,
           status: 'waiting'
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (roomError) throw roomError;
+
+      // 2. room_participants에 사용자 추가
+      const { error: participantError } = await supabase
+        .from('room_participants')
+        .insert({
+          room_id: roomData.id,
+          user_name: userName, // 실제 사용자 이름 사용
+          user_type: 'customer' // CHECK 제약조건: 'customer' 또는 'agent'만 허용
+        });
+
+      if (participantError) throw participantError;
       
-      router.push(`/user-chats/${data.id}`);
-      return data;
+      router.push(`/user-chats/${roomData.id}`);
+      return roomData;
     } catch (error) {
       console.error('Error creating chat:', error);
       throw error;
@@ -49,19 +62,51 @@ export const useChat = () => {
   const fetchChats = async () => {
     try {
       const userId = getUserId();
-      const { data, error } = await supabase
-        .from('chats')
+      console.log('Fetching chats for user:', userId);
+      
+      // 사용자가 참여한 rooms 조회
+      const { data: userRooms, error: roomsError } = await supabase
+        .from('room_participants')
         .select(`
-          *,
-          messages:message(content, created_at, sender_type)
+          room_id,
+          rooms (
+            id,
+            name,
+            status,
+            agent_id,
+            created_at,
+            updated_at,
+            messages (
+              content,
+              created_at,
+              sender_type
+            )
+          )
         `)
-        .eq('user_id', userId)
-        .order('updated_at', { ascending: false });
+        .eq('user_name', userId);
 
-      if (error) throw error;
-      setChats(data || []);
+      if (roomsError) {
+        console.error('Supabase error:', roomsError);
+        throw roomsError;
+      }
+      
+      // 데이터 구조 변환 - 타입 안전성 확보
+      const transformedRooms: Room[] = [];
+      if (userRooms) {
+        for (const item of userRooms) {
+          if (item.rooms) {
+            transformedRooms.push(item.rooms as unknown as Room);
+          }
+        }
+      }
+      console.log('Chats fetched successfully:', transformedRooms);
+      setChats(transformedRooms);
     } catch (error) {
       console.error('Error fetching chats:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
     } finally {
       setLoading(false);
     }
@@ -74,14 +119,25 @@ export const useChat = () => {
     const userId = getUserId();
     
     const subscription = supabase
-      .channel('chats_changes')
+      .channel('rooms_changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'chats',
-          filter: `user_id=eq.${userId}`
+          table: 'room_participants',
+          filter: `user_name=eq.${userId}`
+        },
+        () => {
+          fetchChats();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rooms'
         },
         () => {
           fetchChats();
@@ -101,3 +157,4 @@ export const useChat = () => {
     fetchChats
   };
 };
+

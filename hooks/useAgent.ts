@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase, Chat, Message, Agent } from '@/lib/supabase';
+import { supabase, Room, Message, Agent } from '@/lib/supabase';
 
 export const useAgent = () => {
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [chats, setChats] = useState<Room[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,10 +12,10 @@ export const useAgent = () => {
   const fetchAllChats = async () => {
     try {
       const { data, error } = await supabase
-        .from('chats')
+        .from('rooms')
         .select(`
           *,
-          messages:message(content, created_at, sender_type)
+          messages(content, created_at, sender_type)
         `)
         .order('updated_at', { ascending: false });
 
@@ -47,7 +47,7 @@ export const useAgent = () => {
   const assignChatToAgent = async (chatId: string, agentId: string) => {
     try {
       const { error } = await supabase
-        .from('chats')
+        .from('rooms')
         .update({ 
           agent_id: agentId,
           status: 'active',
@@ -68,8 +68,8 @@ export const useAgent = () => {
       const { data, error } = await supabase
         .from('messages')
         .insert({
-          chat_id: chatId,
-          sender_id: agentId,
+          room_id: chatId,
+          sender_name: '상담사',
           sender_type: 'agent',
           content: content.trim(),
           is_read: false
@@ -81,7 +81,7 @@ export const useAgent = () => {
 
       // Update chat updated_at
       await supabase
-        .from('chats')
+        .from('rooms')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', chatId);
 
@@ -96,7 +96,7 @@ export const useAgent = () => {
   const updateChatStatus = async (chatId: string, status: 'waiting' | 'active' | 'resolved') => {
     try {
       const { error } = await supabase
-        .from('chats')
+        .from('rooms')
         .update({ 
           status,
           updated_at: new Date().toISOString()
@@ -122,7 +122,7 @@ export const useAgent = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'chats'
+          table: 'rooms'
         },
         () => {
           fetchAllChats();
@@ -157,3 +157,4 @@ export const useAgent = () => {
     fetchAgents
   };
 };
+

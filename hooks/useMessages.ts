@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase, Message, Chat } from '@/lib/supabase';
+import { supabase, Message, Room } from '@/lib/supabase';
 
 export const useMessages = (chatId: string) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chat, setChat] = useState<Chat | null>(null);
+  const [chat, setChat] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
@@ -24,19 +24,24 @@ export const useMessages = (chatId: string) => {
 
   // Fetch messages for a chat
   const fetchMessages = async () => {
-    if (!chatId) return;
+    if (!chatId || chatId === 'dummy-id') {
+      setMessages([]);
+      setChat(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select('*')
-        .eq('chat_id', chatId)
+        .eq('room_id', chatId)
         .order('created_at', { ascending: true });
 
       if (messagesError) throw messagesError;
 
       const { data: chatData, error: chatError } = await supabase
-        .from('chats')
+        .from('rooms')
         .select('*')
         .eq('id', chatId)
         .single();
@@ -63,8 +68,8 @@ export const useMessages = (chatId: string) => {
       const { data, error } = await supabase
         .from('messages')
         .insert({
-          chat_id: chatId,
-          sender_id: userId,
+          room_id: chatId,
+          sender_name: '사용자', // 임시로 '사용자' 사용 (나중에 실제 이름으로 개선)
           sender_type: 'user',
           content: content.trim(),
           is_read: false
@@ -77,7 +82,7 @@ export const useMessages = (chatId: string) => {
       // Update chat status to active if it's waiting
       if (chat?.status === 'waiting') {
         await supabase
-          .from('chats')
+          .from('rooms')
           .update({ status: 'active', updated_at: new Date().toISOString() })
           .eq('id', chatId);
       }
@@ -105,7 +110,7 @@ export const useMessages = (chatId: string) => {
           event: '*',
           schema: 'public',
           table: 'messages',
-          filter: `chat_id=eq.${chatId}`
+          filter: `room_id=eq.${chatId}`
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -135,3 +140,4 @@ export const useMessages = (chatId: string) => {
     fetchMessages
   };
 };
+
