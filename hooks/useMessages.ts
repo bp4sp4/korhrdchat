@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase, Message, Room } from '@/lib/supabase';
 
 export const useMessages = (chatId: string) => {
@@ -23,7 +23,7 @@ export const useMessages = (chatId: string) => {
   };
 
   // Fetch messages for a chat
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     if (!chatId || chatId === 'dummy-id') {
       setMessages([]);
       setChat(null);
@@ -55,7 +55,7 @@ export const useMessages = (chatId: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [chatId]);
 
   // Send a message
   const sendMessage = async (content: string) => {
@@ -124,12 +124,25 @@ export const useMessages = (chatId: string) => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rooms',
+          filter: `id=eq.${chatId}`
+        },
+        () => {
+          // rooms 테이블이 변경되면 (agent_id 등) 전체 데이터 다시 가져오기
+          fetchMessages();
+        }
+      )
       .subscribe();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [chatId]);
+  }, [chatId, fetchMessages]);
 
   return {
     messages,

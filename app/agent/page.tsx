@@ -64,6 +64,8 @@ const AgentPage = () => {
   const handleSendAgentMessage = async () => {
     if (selectedChat && agentMessage.trim() && agents.length > 0) {
       try {
+        // 상담사가 메시지를 보낼 때 자동으로 연결
+        await assignChatToAgent(selectedChat, agents[0].id);
         await sendAgentMessage(selectedChat, agentMessage, agents[0].id);
         setAgentMessage('');
       } catch (error) {
@@ -138,7 +140,7 @@ const AgentPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat List */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-border">
+            <div className="bg-white h-[80vh] rounded-lg shadow-sm border border-border">
               {/* Search and Filter */}
               <div className="p-4 border-b border-border">
                 <div className="relative mb-4">
@@ -176,7 +178,17 @@ const AgentPage = () => {
                     filteredChats.map((chat) => (
                     <div
                       key={chat.id}
-                      onClick={() => setSelectedChat(chat.id)}
+                      onClick={async () => {
+                        setSelectedChat(chat.id);
+                        // 상담사가 채팅을 선택하면 자동으로 연결
+                        if (agents.length > 0) {
+                          try {
+                            await assignChatToAgent(chat.id, agents[0].id);
+                          } catch (error) {
+                            console.error('Failed to auto-assign chat:', error);
+                          }
+                        }
+                      }}
                       className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${
                         selectedChat === chat.id ? 'bg-muted' : ''
                       }`}

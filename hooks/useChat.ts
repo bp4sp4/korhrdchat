@@ -31,7 +31,7 @@ export const useChat = () => {
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .insert({
-          name: `${userName}님의 채팅`,
+          name: '한평생 상담센터',
           status: 'waiting'
         })
         .select()
@@ -44,11 +44,14 @@ export const useChat = () => {
         .from('room_participants')
         .insert({
           room_id: roomData.id,
-          user_name: userName, // 실제 사용자 이름 사용
+          user_name: userId, // userId를 사용하여 일관성 유지
           user_type: 'customer' // CHECK 제약조건: 'customer' 또는 'agent'만 허용
         });
 
       if (participantError) throw participantError;
+      
+      // 새 채팅 생성 후 대화 리스트 즉시 업데이트
+      await fetchChats();
       
       router.push(`/user-chats/${roomData.id}`);
       return roomData;
@@ -64,7 +67,7 @@ export const useChat = () => {
       const userId = getUserId();
       console.log('Fetching chats for user:', userId);
       
-      // 사용자가 참여한 rooms 조회
+      // 사용자가 참여한 rooms 조회 (최신순 정렬)
       const { data: userRooms, error: roomsError } = await supabase
         .from('room_participants')
         .select(`
@@ -83,7 +86,8 @@ export const useChat = () => {
             )
           )
         `)
-        .eq('user_name', userId);
+        .eq('user_name', userId)
+        .order('updated_at', { referencedTable: 'rooms', ascending: false });
 
       if (roomsError) {
         console.error('Supabase error:', roomsError);
@@ -99,6 +103,14 @@ export const useChat = () => {
           }
         }
       }
+      
+      // 최신순으로 정렬 (클라이언트 사이드에서 한번 더 정렬)
+      transformedRooms.sort((a, b) => {
+        const dateA = new Date(a.updated_at || a.created_at);
+        const dateB = new Date(b.updated_at || b.created_at);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
       console.log('Chats fetched successfully:', transformedRooms);
       setChats(transformedRooms);
     } catch (error) {
