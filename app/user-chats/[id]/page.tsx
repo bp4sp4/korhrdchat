@@ -42,6 +42,16 @@ const ChatRoomPage = ({ params }: ChatRoomPageProps) => {
     }
   };
 
+  const handleQuickSelect = async (option: string) => {
+    if (!sending) {
+      try {
+        await sendMessage(option);
+      } catch (error) {
+        console.error('Failed to send quick select message:', error);
+      }
+    }
+  };
+
   // 메시지가 추가될 때마다 자동 스크롤
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,19 +86,20 @@ const ChatRoomPage = ({ params }: ChatRoomPageProps) => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className={`font-semibold ${chat?.agent_id ? 'text-green-600' : 'text-orange-500'}`}>
-                {chat?.agent_id ? '연결되었습니다' : '상담사 담당 대기중'}
+              <h3 className="font-semibold text-green-600">
+                상담사 연결됨
               </h3>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col h-full">
+        <div className="flex flex-col" style={{ height: 'calc(100% - 80px)' }}>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-4">
               {loading ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -146,10 +157,40 @@ const ChatRoomPage = ({ params }: ChatRoomPageProps) => {
                   </div>
                 ))
               )}
+              
+              {/* 웰컴 메시지 후 빠른 선택 버튼들 */}
+              {messages.length === 1 && messages[0]?.sender_type === 'agent' && (
+                <div className="space-y-3 mt-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => handleQuickSelect('기존 가맹점')}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
+                    >
+                      기존 가맹점
+                    </button>
+                    <button 
+                      onClick={() => handleQuickSelect('대리점 문의')}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
+                    >
+                      대리점 문의
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    <button 
+                      onClick={() => handleQuickSelect('단말기 구매 전 문의하기')}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
+                    >
+                      단말기 구매 전 문의하기
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               {/* 자동 스크롤을 위한 참조 요소 */}
               <div ref={messagesEndRef} />
             </div>
-          </ScrollArea>
+            </ScrollArea>
+          </div>
 
           {/* Message Input */}
           <div className="p-4 border-t border-gray-100 bg-white">
@@ -171,10 +212,9 @@ const ChatRoomPage = ({ params }: ChatRoomPageProps) => {
               </Button>
             </div>
           </div>
+          {/* Bottom Navigation */}
+          <Footer />
         </div>
-
-        {/* Bottom Navigation */}
-        <Footer />
       </div>
     </div>
   );

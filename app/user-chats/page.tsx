@@ -55,22 +55,23 @@ const UserChatsPage = () => {
         <Header title="내 대화" />
 
         {/* Content */}
-        <div className="px-6 py-4 flex-1 flex flex-col">
-          {/* Search Section */}
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="대화 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-50 border-gray-200"
-              />
+        <div className="flex flex-col" style={{ height: 'calc(100% - 80px)' }}>
+          <div className="px-6 py-4 flex-1 flex flex-col">
+            {/* Search Section */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="대화 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-gray-50 border-gray-200"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Chat List */}
-          <div className="flex-1 overflow-y-auto">
+            {/* Chat List */}
+            <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
@@ -129,10 +130,11 @@ const UserChatsPage = () => {
               </div>
             )}
           </div>
-        </div>
+          </div>
 
-        {/* Bottom Navigation */}
-        <Footer />
+          {/* Bottom Navigation */}
+          <Footer />
+        </div>
       </div>
     </div>
   );

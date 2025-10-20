@@ -27,12 +27,12 @@ export const useChat = () => {
     try {
       const userId = getUserId();
       
-      // 1. room 생성
+      // 1. room 생성 (자동으로 열린 상태로 설정)
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .insert({
           name: '한평생 상담센터',
-          status: 'waiting'
+          status: 'active'
         })
         .select()
         .single();
@@ -49,6 +49,24 @@ export const useChat = () => {
         });
 
       if (participantError) throw participantError;
+
+      // 3. 웰컴 메시지 추가
+      const welcomeMessage = {
+        room_id: roomData.id,
+        sender_name: '상담사',
+        sender_type: 'agent',
+        content: '안녕하세요! 무엇을 도와드릴까요?',
+        is_read: false
+      };
+
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert(welcomeMessage);
+
+      if (messageError) {
+        console.error('Error inserting welcome message:', messageError);
+        // 웰컴 메시지 실패해도 채팅은 계속 진행
+      }
       
       // 새 채팅 생성 후 대화 리스트 즉시 업데이트
       await fetchChats();

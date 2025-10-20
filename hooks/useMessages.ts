@@ -79,13 +79,11 @@ export const useMessages = (chatId: string) => {
 
       if (error) throw error;
 
-      // Update chat status to active if it's waiting
-      if (chat?.status === 'waiting') {
-        await supabase
-          .from('rooms')
-          .update({ status: 'active', updated_at: new Date().toISOString() })
-          .eq('id', chatId);
-      }
+      // Update chat status to active and update timestamp
+      await supabase
+        .from('rooms')
+        .update({ status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', chatId);
 
       return data;
     } catch (error) {

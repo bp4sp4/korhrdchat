@@ -108,7 +108,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ width = 390, height = 690 }) =>
                 className="w-full max-w-xs"
               >
                 <Plus className="w-5 h-5 mr-2" />
-                새 채팅 시작하기
+                문의하기
               </Button>
               <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-xs">
                 <div className="p-4 rounded-lg bg-muted/50 text-center">

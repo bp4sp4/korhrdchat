@@ -39,8 +39,9 @@ export default function HomePage() {
         {/* Top Header */}
         <Header />
 
-        {/* Main Content Card */}
-        <div className="px-6 py-4">
+        {/* Main Content */}
+        <div className="flex flex-col" style={{ height: 'calc(100% - 80px)' }}>
+          <div className="px-6 py-4 flex-1">
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
             {/* Greeting Section */}
             <div className="flex items-center gap-3 mb-4">
@@ -136,10 +137,11 @@ export default function HomePage() {
               <span>실시간 상담 서비스 이용중</span>
             </div>
           </div>
-        </div>
+          </div>
 
-        {/* Bottom Navigation */}
-        <Footer />
+          {/* Bottom Navigation */}
+          <Footer />
+        </div>
       </div>
     </div>
   );

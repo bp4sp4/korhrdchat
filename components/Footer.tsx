@@ -15,7 +15,7 @@ export default function Footer() {
 
   return (
     <div 
-      className="absolute bottom-0 left-0 right-0 bg-[#F7F7F8] border-t border-gray-100" 
+      className="bg-[#F7F7F8] border-t border-gray-100" 
       style={{ borderBottomLeftRadius: '2.5rem', borderBottomRightRadius: '2.5rem' }}
     >
       <div className="flex items-center justify-around py-4">
