@@ -33,7 +33,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="w-full h-screen flex items-center justify-center" style={{ backgroundColor: '#F7F7F8' }}>
+    <div className="w-full h-screen flex items-center justify-center" style={{ backgroundColor: '#eeeeee' }}>
       {/* Main Container */}
       <div className="relative bg-[#F7F7F8] shadow-2xl" style={{ width: '390px', height: '690px', borderRadius: '2.5rem' }}>
         {/* Top Header */}
@@ -41,28 +41,28 @@ export default function HomePage() {
 
         {/* Main Content */}
         <div className="flex flex-col" style={{ height: 'calc(100% - 80px)' }}>
-          <div className="px-6 py-4 flex-1">
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <div className="px-6 py-4 flex-1 flex justify-center">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6" style={{ width: '358px' }}>
             {/* Greeting Section */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 mb-4">
               {/* Small Logo */}
-              <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-xs">로고</span>
+              <div className="w-8 h-8 flex items-center justify-center">
+                <span className="text-white font-bold text-xs"><img src="/logo.png" alt="logo" className="rounded-[23.52px]"/></span>
               </div>
-              <h2 className="text-base font-semibold text-gray-900">한평생 상담센터</h2>
+              <h2 className="text-[16px] font-bold text-gray-900">한평생상담센터</h2>
             </div>
 
-            <div className="mb-6">
-              <p className="text-gray-900 mb-2">안녕하세요. 한평생 상담센터입니다. 😊</p>
+            <div className="mb-6 text-[15px]">
+              <p className="text-[#1e1e1e] font-medium mb-2">안녕하세요. 한평생 상담센터입니다. 😊</p>
               
               <div className="flex items-center gap-2 mb-4">
                 <ChevronDown className="w-4 h-4 text-gray-600" />
-                <p className="text-sm text-gray-700">
+                <p className="text-[15px] text-[#1e1e1e] font-medium">
                   아래 내용은 상담사에게 직접 문의해주세요!
                 </p>
               </div>
 
-              <div className="space-y-2 text-sm text-gray-700">
+              <div className="space-y-2 text-[15px] text-[#1e1e1e] font-medium">
                 <div className="flex items-start gap-2">
                   <span className="text-gray-400">•</span>
                   <span>계정 관련 문의 및 변경</span>

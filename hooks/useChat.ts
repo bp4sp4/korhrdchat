@@ -33,6 +33,7 @@ export const useChat = () => {
         .insert({
           name: '한평생 상담센터',
           status: 'active'
+          // agent_id는 나중에 상담사가 배정될 때 설정
         })
         .select()
         .single();

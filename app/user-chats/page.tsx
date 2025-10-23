@@ -40,12 +40,14 @@ const UserChatsPage = () => {
       minute: '2-digit' 
     }) : '시간 정보 없음',
     unreadCount: chat.messages ? 
-      chat.messages.filter(msg => !msg.is_read && msg.sender_type === 'agent').length : 0
+      chat.messages.filter(msg => !msg.is_read && msg.sender_type === 'agent').length : 0,
+    agent_id: chat.agent_id
   }));
 
-  const filteredChats = transformedChats.filter(chat =>
-    chat.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredChats = transformedChats
+    .filter(chat => chat.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    // .filter(chat => !chat.agent_id) // 부재중 채팅만 (agent_id가 없는 것) - 임시로 주석 처리
+    .slice(0, 2); // 최대 2개만 표시
 
   return (
     <div className="w-full h-screen flex items-center justify-center" style={{ backgroundColor: '#F7F7F8' }}>
@@ -80,9 +82,9 @@ const UserChatsPage = () => {
             ) : filteredChats.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                 <MessageCircle className="w-12 h-12 mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">대화가 없습니다</p>
+                <p className="text-lg font-medium mb-2">부재중 채팅이 없습니다</p>
                 <p className="text-sm text-center mb-4">
-                  새로운 상담을 시작해보세요
+                  모든 상담사가 온라인 상태입니다
                 </p>
                 <Button onClick={handleCreateChat} className="bg-blue-500 hover:bg-blue-600">
                   새 대화 시작
@@ -94,7 +96,7 @@ const UserChatsPage = () => {
                   <div
                     key={chat.id}
                     onClick={() => router.push(`/user-chats/${chat.id}`)}
-                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors rounded-xl"
+                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors rounded-xl border-b border-gray-100 last:border-b-0"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="w-12 h-12">
@@ -104,7 +106,7 @@ const UserChatsPage = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between mb-2">
                           <h3 className="font-semibold text-gray-900 truncate">
                             {chat.title}
                           </h3>
@@ -120,9 +122,17 @@ const UserChatsPage = () => {
                             )}
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 truncate">
-                          {chat.lastMessage}
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600 truncate flex-1">
+                            {chat.lastMessage}
+                          </p>
+                          <div className="flex items-center gap-1 ml-2">
+                            <div className={`w-2 h-2 rounded-full ${chat.agent_id ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                            <span className={`text-xs ${chat.agent_id ? 'text-green-600' : 'text-orange-500'}`}>
+                              {chat.agent_id ? '온라인' : '대기중'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

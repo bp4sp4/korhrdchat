@@ -86,9 +86,12 @@ const ChatRoomPage = ({ params }: ChatRoomPageProps) => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-green-600">
-                상담사 연결됨
+              <h3 className={`font-semibold ${chat?.agent_id ? 'text-green-600' : 'text-orange-500'}`}>
+                {chat?.agent_id ? '상담사 온라인' : '상담사 대기중'}
               </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                {chat?.agent_id ? '실시간 상담 가능' : '곧 상담사가 연결됩니다'}
+              </p>
             </div>
           </div>
         </div>
